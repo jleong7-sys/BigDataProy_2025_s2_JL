@@ -23,7 +23,7 @@ ELASTIC_INDEX_DEFAULT = os.getenv('ELASTIC_INDEX_DEFAULT', 'index_cuentos')
 
 # Versión de la aplicación
 VERSION_APP = "1.2.0"
-CREATOR_APP = "LuisFCG"
+CREATOR_APP = "JohannaLeon"
 
 # Inicializar conexiones
 mongo = MongoDB(MONGO_URI, MONGO_DB)

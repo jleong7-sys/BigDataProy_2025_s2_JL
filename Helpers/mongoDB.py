@@ -21,8 +21,8 @@ class MongoDB:
         """Valida usuario y contraseña con MD5"""
         try:
             
-            #password_md5 = hashlib.md5(password.encode()).hexdigest()
-            password_md5 =password  # Deshabilitado MD5 para pruebas
+            password_md5 = hashlib.md5(password.encode()).hexdigest()
+            #password_md5 =password  # Deshabilitado MD5 para pruebas
             user = self.db[coleccion].find_one({
                 'usuario': usuario,
                 'password': password_md5
@@ -51,11 +51,11 @@ class MongoDB:
     def crear_usuario(self, usuario: str, password: str, permisos: Dict, coleccion: str) -> bool:
         """Crea un nuevo usuario"""
         try:
-            #password_md5 = hashlib.md5(password.encode()).hexdigest()
-            password_plain = password  # Deshabilitado MD5 para pruebas (consistente con validar_usuario)
+            password_md5 = hashlib.md5(password.encode()).hexdigest()
+            #password_plain = password  # Deshabilitado MD5 para pruebas (consistente con validar_usuario)
             documento = {
                 'usuario': usuario,
-                'password': password_plain,
+                'password': password_md5,
                 'permisos': permisos
             }
             self.db[coleccion].insert_one(documento)
