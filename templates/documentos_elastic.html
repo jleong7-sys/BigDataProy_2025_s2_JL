@@ -67,7 +67,7 @@
                     <input type="file" class="form-control" id="file_zip" accept=".zip">
                     <div class="form-text">El archivo ZIP debe contener archivos .json</div>
                 </div>
-                <button type="button" class="btn btn-primary" onclick="procesarZip()">
+                <button type="button" class="btn btn-primary" onclick="procesarZip()" id="btn_procesar_zip">
                     <i class="bi bi-upload"></i> Procesar ZIP
                 </button>
             </div>
@@ -92,7 +92,7 @@
                     <input type="text" class="form-control" id="tipos_archivos" placeholder="pdf, txt" value="pdf">
                     <div class="form-text">Separar por comas. Ej: pdf, txt, doc</div>
                 </div>
-                <button type="button" class="btn btn-primary" onclick="procesarWebScraping()">
+                <button type="button" class="btn btn-primary" onclick="procesarWebScraping()" id="btn_procesar_webscraping">
                     <i class="bi bi-download"></i> Iniciar Web Scraping
                 </button>
             </div>
@@ -144,6 +144,9 @@
             </div>
             <p class="mt-2" id="mensaje_cargando">Procesando su solicitud...</p>
         </div>
+
+        <!-- Mensajes de alerta -->
+        <div id="alert_container" class="position-fixed top-0 end-0 p-3" style="z-index: 1050;"></div>
     </div>
 
     <footer class="text-center mt-5">
@@ -194,12 +197,16 @@
                     const select = document.getElementById('select_index');
                     select.innerHTML = '<option value="">Seleccione un índice</option>';
                     
-                    data.forEach(indice => {
-                        const option = document.createElement('option');
-                        option.value = indice.nombre;
-                        option.textContent = `${indice.nombre} (${indice.total_documentos} docs)`;
-                        select.appendChild(option);
-                    });
+                    if (Array.isArray(data) && data.length > 0) {
+                        data.forEach(indice => {
+                            const option = document.createElement('option');
+                            option.value = indice.nombre;
+                            option.textContent = `${indice.nombre} (${indice.total_documentos} docs)`;
+                            select.appendChild(option);
+                        });
+                    } else {
+                        select.innerHTML = '<option value="">No se encontraron índices</option>';
+                    }
                 })
                 .catch(error => {
                     console.error('Error:', error);
@@ -211,27 +218,26 @@
         function procesarZip() {
             const fileInput = document.getElementById('file_zip');
             const selectIndex = document.getElementById('select_index');
+            const btnProcesar = document.getElementById('btn_procesar_zip');
             
             if (!fileInput.files || fileInput.files.length === 0) {
-                alert('Por favor, seleccione un archivo ZIP');
+                mostrarAlerta('Por favor, seleccione un archivo ZIP', 'warning');
                 return;
             }
             
-<<<<<<< HEAD
-            /*if (!selectIndex.value) {
-                alert('Por favor, seleccione un índice de destino');
-                return;
-            }*/
-=======
-            if (!selectIndex.value) {
-                alert('Por favor, seleccione un índice de destino');
-                return;
-            }
->>>>>>> origin/main
+            // Validación opcional del índice (comentada temporalmente)
+            // if (!selectIndex.value) {
+            //     mostrarAlerta('Por favor, seleccione un índice de destino', 'warning');
+            //     return;
+            // }
+            
+            // Deshabilitar botón durante el procesamiento
+            btnProcesar.disabled = true;
+            btnProcesar.innerHTML = '<i class="bi bi-hourglass-split"></i> Procesando...';
             
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
-            formData.append('index', selectIndex.value);
+            formData.append('index', selectIndex.value || 'prueba_index');
             
             mostrarCargando('Procesando archivo ZIP...');
             
@@ -242,18 +248,23 @@
             .then(response => response.json())
             .then(data => {
                 ocultarCargando();
+                btnProcesar.disabled = false;
+                btnProcesar.innerHTML = '<i class="bi bi-upload"></i> Procesar ZIP';
                 
                 if (data.success) {
                     archivosActuales = data.archivos;
                     mostrarResultados(data);
+                    mostrarAlerta(`Se procesaron ${data.archivos.length} archivos`, 'success');
                 } else {
-                    alert('Error: ' + (data.error || 'Error desconocido'));
+                    mostrarAlerta('Error: ' + (data.error || 'Error desconocido'), 'danger');
                 }
             })
             .catch(error => {
                 ocultarCargando();
+                btnProcesar.disabled = false;
+                btnProcesar.innerHTML = '<i class="bi bi-upload"></i> Procesar ZIP';
                 console.error('Error:', error);
-                alert('Error al procesar ZIP');
+                mostrarAlerta('Error al procesar ZIP: ' + error.message, 'danger');
             });
         }
 
@@ -263,23 +274,24 @@
             const extensionesNavegar = document.getElementById('extensiones_navegar').value.trim();
             const tiposArchivos = document.getElementById('tipos_archivos').value.trim();
             const selectIndex = document.getElementById('select_index');
+            const btnProcesar = document.getElementById('btn_procesar_webscraping');
             
             if (!url) {
-                alert('Por favor, ingrese una URL');
+                mostrarAlerta('Por favor, ingrese una URL', 'warning');
                 return;
             }
             
-<<<<<<< HEAD
-            /*if (!selectIndex.value) {
-                alert('Por favor, seleccione un índice de destino');
-                return;
-            }*/
-=======
-            if (!selectIndex.value) {
-                alert('Por favor, seleccione un índice de destino');
+            // Validar URL
+            try {
+                new URL(url);
+            } catch (e) {
+                mostrarAlerta('Por favor, ingrese una URL válida', 'warning');
                 return;
             }
->>>>>>> origin/main
+            
+            // Deshabilitar botón durante el procesamiento
+            btnProcesar.disabled = true;
+            btnProcesar.innerHTML = '<i class="bi bi-hourglass-split"></i> Procesando...';
             
             mostrarCargando('Realizando Web Scraping... Esto puede tardar varios minutos.');
             
@@ -292,24 +304,34 @@
                     url: url,
                     extensiones_navegar: extensionesNavegar,
                     tipos_archivos: tiposArchivos,
-                    index: selectIndex.value
+                    index: selectIndex.value || 'prueba_index'
                 })
             })
             .then(response => response.json())
             .then(data => {
                 ocultarCargando();
+                btnProcesar.disabled = false;
+                btnProcesar.innerHTML = '<i class="bi bi-download"></i> Iniciar Web Scraping';
                 
                 if (data.success) {
                     archivosActuales = data.archivos;
                     mostrarResultados(data);
+                    
+                    let mensaje = `Web Scraping completado. Se encontraron ${data.archivos.length} archivos`;
+                    if (data.stats) {
+                        mensaje += ` (${data.stats.descargados} descargados, ${data.stats.errores} errores)`;
+                    }
+                    mostrarAlerta(mensaje, 'success');
                 } else {
-                    alert('Error: ' + (data.error || 'Error desconocido'));
+                    mostrarAlerta('Error: ' + (data.error || 'Error desconocido'), 'danger');
                 }
             })
             .catch(error => {
                 ocultarCargando();
+                btnProcesar.disabled = false;
+                btnProcesar.innerHTML = '<i class="bi bi-download"></i> Iniciar Web Scraping';
                 console.error('Error:', error);
-                alert('Error al procesar Web Scraping');
+                mostrarAlerta('Error al procesar Web Scraping: ' + error.message, 'danger');
             });
         }
 
@@ -321,11 +343,14 @@
             if (data.mensaje) {
                 infoHtml += `<br>${data.mensaje}`;
             }
+            if (data.stats) {
+                infoHtml += `<br><strong>Estadísticas:</strong> ${JSON.stringify(data.stats)}`;
+            }
             document.getElementById('info_resultados').innerHTML = infoHtml;
             
             // Actualizar texto del botón según método
             if (metodoActual === 'webscraping') {
-                document.getElementById('texto_boton_cargar').textContent = 'PLN/Cargar Seleccionados';
+                document.getElementById('texto_boton_cargar').textContent = 'Procesar PLN y Cargar';
             } else {
                 document.getElementById('texto_boton_cargar').textContent = 'Cargar Seleccionados';
             }
@@ -335,12 +360,19 @@
             
             data.archivos.forEach((archivo, index) => {
                 const row = document.createElement('tr');
+                const extension = archivo.extension || 'json';
+                const icono = extension === 'pdf' ? '📄' : 
+                             extension === 'txt' ? '📝' : '📊';
+                
                 row.innerHTML = `
                     <td>
                         <input type="checkbox" class="archivo-checkbox" data-index="${index}" checked>
                     </td>
-                    <td>${archivo.nombre}</td>
-                    <td><span class="badge bg-secondary">${archivo.extension || 'json'}</span></td>
+                    <td>
+                        <i class="bi ${extension === 'pdf' ? 'bi-file-pdf' : 'bi-file-text'}"></i>
+                        ${archivo.nombre}
+                    </td>
+                    <td><span class="badge bg-secondary">${extension.toUpperCase()}</span></td>
                     <td>${formatearTamaño(archivo.tamaño || 0)}</td>
                     <td><span class="badge bg-warning">Pendiente</span></td>
                 `;
@@ -348,20 +380,23 @@
             });
             
             // Scroll a resultados
-            document.getElementById('seccion_resultados').scrollIntoView({ behavior: 'smooth' });
+            document.getElementById('seccion_resultados').scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start' 
+            });
         }
 
         // Cargar archivos seleccionados a Elastic
         function cargarSeleccionados() {
             const checkboxes = document.querySelectorAll('.archivo-checkbox:checked');
             if (checkboxes.length === 0) {
-                alert('Por favor, seleccione al menos un archivo');
+                mostrarAlerta('Por favor, seleccione al menos un archivo', 'warning');
                 return;
             }
             
             const selectIndex = document.getElementById('select_index');
             if (!selectIndex.value) {
-                alert('Por favor, seleccione un índice de destino');
+                mostrarAlerta('Por favor, seleccione un índice de destino', 'warning');
                 return;
             }
             
@@ -386,27 +421,32 @@
                 ocultarCargando();
                 
                 if (data.success) {
-                    alert(`Carga completada:\n- Documentos indexados: ${data.indexados}\n- Errores: ${data.errores}`);
+                    const mensaje = `Carga completada exitosamente:\n- Documentos indexados: ${data.indexados}\n- Errores: ${data.errores}`;
+                    
+                    mostrarAlerta(mensaje, 'success');
                     
                     // Actualizar estado en la tabla
                     checkboxes.forEach(cb => {
                         const row = cb.closest('tr');
                         const badge = row.querySelector('td:last-child span');
                         badge.className = 'badge bg-success';
-                        badge.textContent = 'Cargado';
+                        badge.textContent = 'Cargado ✓';
                         cb.disabled = true;
                     });
                     
                     // Recargar lista de índices para actualizar contadores
-                    cargarIndices();
+                    setTimeout(() => {
+                        cargarIndices();
+                    }, 1000);
+                    
                 } else {
-                    alert('Error al cargar documentos: ' + (data.error || 'Error desconocido'));
+                    mostrarAlerta('Error al cargar documentos: ' + (data.error || 'Error desconocido'), 'danger');
                 }
             })
             .catch(error => {
                 ocultarCargando();
                 console.error('Error:', error);
-                alert('Error al cargar documentos');
+                mostrarAlerta('Error al cargar documentos: ' + error.message, 'danger');
             });
         }
 
@@ -443,6 +483,32 @@
 
         function ocultarCargando() {
             document.getElementById('div_cargando').style.display = 'none';
+        }
+
+        // Función para mostrar alertas elegantes
+        function mostrarAlerta(mensaje, tipo = 'info') {
+            const alertContainer = document.getElementById('alert_container');
+            const alertId = 'alert-' + Date.now();
+            
+            const alertHTML = `
+                <div id="${alertId}" class="alert alert-${tipo} alert-dismissible fade show" role="alert">
+                    <i class="bi ${tipo === 'success' ? 'bi-check-circle' : 
+                                 tipo === 'warning' ? 'bi-exclamation-triangle' : 
+                                 tipo === 'danger' ? 'bi-x-circle' : 'bi-info-circle'}"></i>
+                    ${mensaje}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            alertContainer.insertAdjacentHTML('beforeend', alertHTML);
+            
+            // Auto-eliminar después de 5 segundos
+            setTimeout(() => {
+                const alertElement = document.getElementById(alertId);
+                if (alertElement) {
+                    alertElement.remove();
+                }
+            }, 5000);
         }
     </script>
 </body>
